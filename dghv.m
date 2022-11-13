@@ -49,4 +49,50 @@ function DGHVNoiseTerm(c, N, p)
 	return (r);
 end function;
 
+//ACD problem: https://eprint.iacr.org/2016/215.pdf
+//implementation of OLA based attack as given in Section4
+function LatAttackDGHV(eta,rho, cs)
+        R := 2^rho;
+        t := #cs;
+        B := Matrix(Integers(), t, t+1, []); //deriving the basis matrix
+        for i in [1..#cs] do
+            B[i][1] := cs[i];
+            B[i][i+1] := R;
+        end for;
+        Lat,Coef := BKZ(LatticeWithBasis(B),30);
+        Coef := Transpose(Coef);
+        smallMatrix := (Submatrix(Coef, 1,1,t,t-1)); //taking t-1 equations like mentioned in the paper
+        q_vectors := Basis(Kernel(smallMatrix)); //finding the kernel of the matrix that maps to the lattice
+        q0 := q_vectors[1][1];
+        r0 := cs[1] mod q0;
+        p := (cs[1] - r0) div q0;
+        //if r0 is even p is even (we assumed p is odd), so adding 1 to match the parity
+        if (p mod 2 eq 0) then
+            p:=p+1;
+        end if;
+        return p;
+end function;
+
+
+
+//implementation of SDA based attack as given in Section3
+function LatAttackDGHV2(eta,rho, cs)
+        R := 2^(rho+1);
+        t := #cs;
+        B := Matrix(Integers(), t+1, t+1, [0: i in [1..(t+1)^2]]); //deriving the basis matrix
+        for i in [1..#cs] do
+            B[1][i+1] := cs[i];
+            B[i+1][i+1] := -cs[1];
+        end for;
+        B[1][1]:=R;
+        Lat := BKZ(LatticeWithBasis(B),2);
+        q0 := Basis(Lat)[1][1] div R;
+        r0 := cs[1] mod q0;
+        p := (cs[1] - r0) div q0;
+        //if r0 is even p is even (we assumed p is odd), so adding 1 to match the parity
+        if (p mod 2 eq 0) then
+            p := p+1;
+        end if;
+        return p;
+end function;
 
